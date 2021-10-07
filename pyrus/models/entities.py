@@ -104,7 +104,7 @@ class FormFieldInfo(object):
     def __init__(self, required_step=None, immutable_step=None, options=None, catalog_id=None, columns=None,
                 fields=None, decimal_places=None, code=None, is_form_title=None, multiline=None,
                  multiple_choice=None, large_view=None, form_id=None, is_required=None, is_table=None,
-                 display_as=None):
+                 display_as=None, default_prefix=None):
         self.required_step = required_step
         self.immutable_step = immutable_step
         self.options = [ChoiceOption(**option) for option in options] if options else None
@@ -121,6 +121,7 @@ class FormFieldInfo(object):
         self.is_required = is_required
         self.is_table = is_table
         self.display_as = display_as
+        self.default_prefix = default_prefix
 
 
 class ChoiceOption(object):
