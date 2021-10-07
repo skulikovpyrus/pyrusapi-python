@@ -16,12 +16,10 @@ class BaseResponse(object):
     error = None
     original_response = None
 
-    def __init__(self, **kwargs):
-        self.original_response = kwargs
-        if 'error_code' in kwargs:
-            self.error_code = kwargs['error_code']
-        if 'error' in kwargs:
-            self.error = kwargs['error']
+    def __init__(self, **data):
+        self.original_response = data
+        self.error_code = data.get('error_code')
+        self.error = data.get('error')
 
 
 class AuthResponse(BaseResponse):
@@ -61,53 +59,12 @@ class FormResponse(BaseResponse):
     """
     __doc__ += BaseResponse.__doc__
 
-    id = None
-    name = None
-    steps = None
-    fields = None
-    deletedOrClosed = None
-    folder = None
+    # запрос ->
+    # ответ <- JSON Формы
 
-    @property
-    def flat_fields(self):
-        return self._get_flat_fields(self.fields)
-
-    def __init__(self, **kwargs):
-        if 'id' in kwargs:
-            self.id = kwargs['id']
-        if 'name' in kwargs:
-            self.name = kwargs['name']
-        if 'steps' in kwargs:
-            self.steps = kwargs['steps']
-        if 'fields' in kwargs:
-            self.fields = []
-            for field in kwargs['fields']:
-                self.fields.append(entities.FormField(**field))
-        if 'deleted_or_closed' in kwargs:
-            self.deletedOrClosed = kwargs['deleted_or_closed']
-        if 'folder' in kwargs:
-            self.folder = []
-            for fld in kwargs['folder']:
-                self.folder.append(fld)
-        super(FormResponse, self).__init__(**kwargs)
-
-    def _get_flat_fields(self, fields):
-        res = []
-        if not fields:
-            return res
-        for field in fields:
-            res.append(field)
-            if not field.info:
-                continue
-            if field.info.fields:
-                res.extend(self._get_flat_fields(field.info.fields))
-            elif field.info.options:
-                for option in field.info.options:
-                    res.extend(self._get_flat_fields(option.fields))
-            elif field.info.columns:
-                res.extend(field.info.columns)
-
-        return res
+    def __init__(self,  **data):
+        self.form = entities.Form(data)
+        super().__init__(**data)
 
 
 class FormsResponse(BaseResponse):
@@ -176,22 +133,10 @@ class CatalogResponse(BaseResponse):
     """
     __doc__ += BaseResponse.__doc__
 
-    items = None
-    catalog_id = None
-    catalog_headers = None
-
-    def __init__(self, **kwargs):
-        if 'catalog_id' in kwargs:
-            self.catalog_id = kwargs['catalog_id']
-        if 'items' in kwargs:
-            self.items = []
-            for item in kwargs['items']:
-                self.items.append(entities.CatalogItem(**item))
-        if 'catalog_headers' in kwargs:
-            self.catalog_headers = []
-            for item in kwargs['catalog_headers']:
-                self.catalog_headers.append(entities.CatalogHeader(**item))
-        super(CatalogResponse, self).__init__(**kwargs)
+    def __init__(self, **data):
+        print(data.keys())
+        self.catalog = entities.Catalog(**data)
+        super(CatalogResponse, self).__init__(**data)
 
 
 class FormRegisterResponse(BaseResponse):

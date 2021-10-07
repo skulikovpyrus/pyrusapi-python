@@ -4,6 +4,9 @@
 
 from datetime import datetime
 from datetime import timezone
+from typing import List
+from pprint import pprint
+
 from . import customhandlers
 from . import constants
 
@@ -23,32 +26,65 @@ class FormField(object):
             row_id (:obj:`int`, optional) Table row id (returned if field is in table)
     """
 
-    id = None
-    type = None
-    name = None
-    info = None
-    value = None
-    parent_id = None
-    row_id = None
+    def __init__(self, id=None, type=None, name=None, info=None, value=None, parent_id=None, row_id=None, tooltip=None,
+                 visibility_condition=None, default_value=None):
+        self.id = id
+        self.type = type
+        self.name = name
+        # self.info = FormFieldInfo(**info) if info else FormFieldInfo()
+        self.value = _create_field_value(self.type, value) if self.type else value
+        self.parent_id = parent_id
+        self.row_id = row_id
+        self.tooltip = tooltip
+        self.visibility_condition = visibility_condition
+        self.default_value = default_value
+        self.info = FormFieldInfo(**info) if info else None
 
-    def __init__(self, **kwargs):
-        if 'id' in kwargs:
-            self.id = kwargs['id']
-        if 'type' in kwargs:
-            self.type = kwargs['type']
-        if 'name' in kwargs:
-            self.name = kwargs['name']
-        if 'info' in kwargs:
-            self.info = FormFieldInfo(**kwargs['info'])
-        if 'value' in kwargs:
-            if self.type:
-                self.value = _create_field_value(self.type, kwargs['value'])
-            else:
-                self.value = kwargs['value']
-        if 'parent_id' in kwargs:
-            self.parent_id = kwargs['parent_id']
-        if 'row_id' in kwargs:
-            self.row_id = kwargs['row_id']
+
+
+class Form:
+    def __init__(self, id=None, name=None, steps=None, fields: List[FormField] = None, deleted_or_closed=False,
+                 print_forms=None, folder=None, default_person_id=None, workflow_advanced_steps=None,
+                 access_levels=None, external_form_settings=None,  helpdesk_settings=None, user_script=None,
+                 is_datacenter_version=None, skip_sms_channel=None):
+        self.id = id
+        self.name = name
+        self.steps = steps
+        self.fields = [FormField(**field) for field in fields] if fields else None
+        self.deleted_or_closed = deleted_or_closed
+        self.print_forms = print_forms
+        self.folder = folder
+        self.default_person_id = default_person_id
+        self.workflow_advanced_steps = workflow_advanced_steps
+        self.access_levels = access_levels
+        self.external_form_settings = external_form_settings
+        self.helpdesk_settings = helpdesk_settings
+        self.user_script = user_script
+        self.is_datacentr_version = is_datacenter_version
+        self.skip_sms_channel = skip_sms_channel
+
+
+    @property
+    def flat_fields(self):
+        return self._get_flat_fields(self.fields)
+
+    def _get_flat_fields(self, fields):
+        res = []
+        if not fields:
+            return res
+        for field in fields:
+            res.append(field)
+            if not field.info:
+                continue
+            if field.info.fields:
+                res.extend(self._get_flat_fields(field.info.fields))
+            elif field.info.options:
+                for option in field.info.options:
+                    res.extend(self._get_flat_fields(option.fields))
+            elif field.info.columns:
+                res.extend(field.info.columns)
+
+        return res
 
 
 class FormFieldInfo(object):
@@ -65,35 +101,26 @@ class FormFieldInfo(object):
             decimal_places(:obj:`int`): Number of decimal places for number field
     """
 
-    required_step = None
-    immutable_step = None
-    options = None
-    catalog_id = None
-    columns = None
-    fields = None
-    decimal_places = None
-
-    def __init__(self, **kwargs):
-        if 'required_step' in kwargs:
-            self.required_step = kwargs['required_step']
-        if 'immutable_step' in kwargs:
-            self.immutable_step = kwargs['immutable_step']
-        if 'options' in kwargs:
-            self.options = []
-            for option in kwargs['options']:
-                self.options.append(ChoiceOption(**option))
-        if 'catalog_id' in kwargs:
-            self.catalog_id = kwargs['catalog_id']
-        if 'columns' in kwargs:
-            self.columns = []
-            for column in kwargs['columns']:
-                self.columns.append(FormField(**column))
-        if 'fields' in kwargs:
-            self.fields = []
-            for field in kwargs['fields']:
-                self.fields.append(FormField(**field))
-        if 'decimal_places' in kwargs:
-            self.decimal_places = kwargs['decimal_places']
+    def __init__(self, required_step=None, immutable_step=None, options=None, catalog_id=None, columns=None,
+                fields=None, decimal_places=None, code=None, is_form_title=None, multiline=None,
+                 multiple_choice=None, large_view=None, form_id=None, is_required=None, is_table=None,
+                 display_as=None):
+        self.required_step = required_step
+        self.immutable_step = immutable_step
+        self.options = [ChoiceOption(**option) for option in options] if options else None
+        self.catalog_id = catalog_id
+        self.columns = [FormField(**column) for column in columns] if columns else None
+        self.fields = [FormField(**field) for field in fields] if fields else None
+        self.decimal_places = decimal_places
+        self.code = code
+        self.is_form_title = is_form_title
+        self.multiline = multiline
+        self.multiple_choice = multiple_choice
+        self.large_view = large_view
+        self.form_id = form_id
+        self.is_required = is_required
+        self.is_table = is_table
+        self.display_as = display_as
 
 
 class ChoiceOption(object):
@@ -317,6 +344,19 @@ class TaskWithComments(Task):
             for comment in kwargs['comments']:
                 self.comments.append(TaskComment(**comment))
         super(TaskWithComments, self).__init__(**kwargs)
+
+
+class Catalog:
+    def __init__(self, catalog_id=None, catalog_headers=None, items=None, name=None, version=None,
+                deleted=None, supervisors=None, external_version=None):
+        self.catalog_id = catalog_id
+        self.catalog_headers = [CatalogHeader(**item) for item in catalog_headers] if catalog_headers else None
+        self.items = [CatalogItem(**item) for item in items] if items else None
+        self.name = name
+        self.version = version
+        self.deleted = deleted
+        self.supervisors = supervisors
+        self.external_version = external_version
 
 
 class Person(object):
@@ -1049,37 +1089,39 @@ def _create_field_value(field_type, value):
     if field_type in ['text', 'money', 'number', 'checkmark', 'email',
                       'phone', 'flag', 'step', 'status', 'note']:
         return value
-    if field_type == 'time':
-        if isinstance(value, datetime):
-            return value
-        return _set_utc_timezone(datetime.strptime(value, constants.TIME_FORMAT).time())
-    if field_type in ['date', 'creation_date', 'due_date']:
-        if isinstance(value, datetime):
-            return value
-        return _set_utc_timezone(datetime.strptime(value, constants.DATE_FORMAT))
-    if field_type == 'due_date_time':
-        if isinstance(value, datetime):
-            return value
-        return _set_utc_timezone(datetime.strptime(value, constants.DATE_TIME_FORMAT))
-    if field_type == 'catalog':
-        return CatalogItem(**value)
-    if field_type == 'file':
-        res = []
-        for file in value:
-            res.append(File(**file))
-        return res
-    if field_type in ['person', 'author']:
-        return Person(**value)
-    if field_type == 'table':
-        return Table(*value)
-    if field_type == 'title':
-        return Title(**value)
-    if field_type == 'multiple_choice':
-        return MultipleChoice(**value)
-    if field_type == 'project':
-        return Projects(**value)
-    if field_type == 'form_link':
-        return FormLink(**value)
+    if value:
+        if field_type == 'time':
+            if isinstance(value, datetime):
+                return value
+            return _set_utc_timezone(datetime.strptime(value, constants.TIME_FORMAT).time())
+        if field_type in ['date', 'creation_date', 'due_date'] and value:
+            if isinstance(value, datetime):
+                return value
+            return _set_utc_timezone(datetime.strptime(value, constants.DATE_FORMAT))
+        if field_type == 'due_date_time':
+            print(value)
+            if isinstance(value, datetime):
+                return value
+            return _set_utc_timezone(datetime.strptime(value, constants.DATE_TIME_FORMAT))
+        if field_type == 'catalog':
+            return CatalogItem(**value)
+        if field_type == 'file':
+            res = []
+            for file in value:
+                res.append(File(**file))
+            return res
+        if field_type in ['person', 'author']:
+            return Person(**value)
+        if field_type == 'table':
+            return Table(*value)
+        if field_type == 'title':
+            return Title(**value)
+        if field_type == 'multiple_choice':
+            return MultipleChoice(**value)
+        if field_type == 'project':
+            return Projects(**value)
+        if field_type == 'form_link':
+            return FormLink(**value)
 
 
 def _get_flat_fields(fields):
