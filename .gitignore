@@ -2,3 +2,6 @@ build/
 dist/
 *.pyc
 pyrus_api.egg-info/
+local_testing.py
+.idea/
+pyrus/models/utils.py
