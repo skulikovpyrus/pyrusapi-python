@@ -59,11 +59,9 @@ class FormResponse(BaseResponse):
     """
     __doc__ += BaseResponse.__doc__
 
-    # запрос ->
-    # ответ <- JSON Формы
 
     def __init__(self,  **data):
-        self.form = entities.Form(data)
+        self.form = entities.Form(**data)
         super().__init__(**data)
 
 
@@ -134,7 +132,6 @@ class CatalogResponse(BaseResponse):
     __doc__ += BaseResponse.__doc__
 
     def __init__(self, **data):
-        print(data.keys())
         self.catalog = entities.Catalog(**data)
         super(CatalogResponse, self).__init__(**data)
 
